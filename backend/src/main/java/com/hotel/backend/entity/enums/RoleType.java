@@ -1,4 +1,5 @@
 package com.hotel.backend.entity.enums;
 
-public record RoleType() {
+public enum RoleType {
+    ADMIN,USER
 }
