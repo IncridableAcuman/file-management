@@ -24,4 +24,9 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ErrorResponse.from(exception,HttpStatus.BAD_REQUEST));
     }
+    @ExceptionHandler(CustomInternalServiceErrorException.class)
+    public ResponseEntity<ErrorResponse> customInternalServiceErrorExceptionHandler(CustomInternalServiceErrorException exception){
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ErrorResponse.from(exception,HttpStatus.INTERNAL_SERVER_ERROR));
+    }
 }

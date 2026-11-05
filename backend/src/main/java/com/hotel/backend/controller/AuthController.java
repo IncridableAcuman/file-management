@@ -31,4 +31,14 @@ public class AuthController {
         authService.logout(refreshToken, response);
         return ResponseEntity.noContent().build();
     }
+    @PostMapping("/forgot-password")
+    public ResponseEntity<String> forgotPassword(@Valid @RequestBody AuthDto.ForgotPasswordRequest request){
+        authService.forgotPassword(request);
+        return ResponseEntity.ok("Reset password link sent to email");
+    }
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(@Valid @RequestBody AuthDto.ResetPasswordRequest request){
+        authService.resetPassword(request);
+        return ResponseEntity.ok("Password updated");
+    }
 }

@@ -49,6 +49,7 @@ public class AuthDto {
         @NotBlank(message = "Confirm password is required")
         @Size(min = 8,message = "Confirm password must be greater than 8 character long")
         private String confirmPassword;
+
     }
     public record AuthResponse(
             String accessToken

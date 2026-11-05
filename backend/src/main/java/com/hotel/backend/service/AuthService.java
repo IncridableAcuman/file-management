@@ -1,6 +1,7 @@
 package com.hotel.backend.service;
 
 import com.hotel.backend.dto.AuthDto;
+import com.hotel.backend.dto.EmailPayload;
 import com.hotel.backend.entity.RoleEntity;
 import com.hotel.backend.entity.TokenEntity;
 import com.hotel.backend.entity.UserEntity;
@@ -27,6 +28,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final TokenService tokenService;
     private final RoleService roleService;
+    private final MailService mailService;
     private final CookieUtil cookieUtil;
     private final JwtUtil jwtUtil;
 
@@ -91,5 +93,24 @@ public class AuthService {
         UserEntity user = checkingAndValidatingToken(refreshToken);
         tokenService.deleteToken(user);
         cookieUtil.clearCookie(response);
+    }
+    public void forgotPassword(AuthDto.ForgotPasswordRequest request){
+        UserEntity user = findUserByEmail(request.getEmail());
+        String accessToken = jwtUtil.generateAccessToken(user);
+        String url = "http://localhost:5173/reset-password?token=" + accessToken;
+        EmailPayload payload = new EmailPayload(user.getEmail(),"Forgot Password",url);
+        mailService.sendMail(payload);
+    }
+    public void resetPassword(AuthDto.ResetPasswordRequest request){
+        if (!request.getPassword().equals(request.getConfirmPassword())){
+            throw new CustomBadRequestException("Password and confirm password mismatch");}
+        if (request.getToken() == null || request.getToken().isEmpty()){
+            throw new CustomBadRequestException("Token is null or empty");}
+        if (!jwtUtil.validateToken(request.getToken())){
+            throw new CustomUnauthorizedException("Invalid or expired token");}
+        String email = jwtUtil.getSubject(request.getToken());
+        UserEntity user = findUserByEmail(email);
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        userRepository.save(user);
     }
 }
