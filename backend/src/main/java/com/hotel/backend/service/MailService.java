@@ -14,8 +14,8 @@ public class MailService {
     public void sendMail(EmailPayload payload){
         template
                 .convertAndSend(
-                        RabbitMqConfig.ROUTING_KEY,
                         RabbitMqConfig.EXCHANGE_NAME,
+                        RabbitMqConfig.ROUTING_KEY,
                         payload
                 );
     }

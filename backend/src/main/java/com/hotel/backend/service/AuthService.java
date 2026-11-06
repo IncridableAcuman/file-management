@@ -19,11 +19,15 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class AuthService {
+    private final EmailTemplateService emailTemplateService;
     private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepository;
     private final TokenService tokenService;
@@ -32,9 +36,8 @@ public class AuthService {
     private final CookieUtil cookieUtil;
     private final JwtUtil jwtUtil;
 
-    public UserEntity findUserByEmail(String email){
-        return userRepository.findByEmail(email).orElseThrow(()-> new CustomNotFoundException("User not found"));
-    }
+    public UserEntity findUserByEmail(String email){return userRepository.findByEmail(email).orElseThrow(()-> new CustomNotFoundException("User not found"));}
+
     public AuthDto.AuthResponse authResponse(UserEntity user,HttpServletResponse response){
         String refreshToken = jwtUtil.generateRefreshToken(user);
         String accessToken = jwtUtil.generateAccessToken(user);
@@ -43,9 +46,7 @@ public class AuthService {
         return AuthDto.AuthResponse.from(accessToken);
     }
     public AuthDto.AuthResponse register(AuthDto.RegisterRequest request, HttpServletResponse response){
-        if (userRepository.existsByEmail(request.getEmail())){
-            throw new CustomBadRequestException("User already exists");
-        }
+        if (userRepository.existsByEmail(request.getEmail())){throw new CustomBadRequestException("User already exists");}
         UserEntity user = UserEntity
                 .builder()
                 .username(request.getUsername())
@@ -61,28 +62,19 @@ public class AuthService {
     }
     public AuthDto.AuthResponse login(AuthDto.LoginRequest request,HttpServletResponse response){
         UserEntity user = findUserByEmail(request.getEmail());
-        if (!passwordEncoder.matches(request.getPassword(),user.getPassword())){
-            throw new CustomBadRequestException("Password mismatch");
-        }
+        if (!passwordEncoder.matches(request.getPassword(),user.getPassword())){throw new CustomBadRequestException("Password mismatch");}
         return authResponse(user,response);
     }
     public UserEntity checkingAndValidatingToken(String refreshToken){
-        if (refreshToken == null || refreshToken.isEmpty()){
-            throw new CustomBadRequestException("Refresh token is null or empty");
-        }
-        if (!jwtUtil.validateToken(refreshToken)){
-            throw new CustomUnauthorizedException("Invalid or expired refresh token");
-        }
+        if (refreshToken == null || refreshToken.isEmpty()){throw new CustomBadRequestException("Refresh token is null or empty");}
+        if (!jwtUtil.validateToken(refreshToken)){throw new CustomUnauthorizedException("Invalid or expired refresh token");}
         Date expiration = jwtUtil.getExpiration(refreshToken);
         String email = jwtUtil.getSubject(refreshToken);
         UserEntity user = findUserByEmail(email);
         TokenEntity dbToken = tokenService.getTokenFromDb(user);
-        LocalDateTime expirationLdt = expiration.toInstant()
-                .atZone(ZoneId.systemDefault())
-                .toLocalDateTime();
-        if (!expirationLdt.equals(dbToken.getExpiration())){
-            throw new CustomUnauthorizedException("Refresh token expiration mismatch detected.");
-        }
+        LocalDateTime expirationLdt = expiration.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+        LocalDateTime dbExpiration = dbToken.getExpiration();
+        if (!expirationLdt.truncatedTo(ChronoUnit.SECONDS).equals(dbExpiration.truncatedTo(ChronoUnit.SECONDS))){throw new CustomUnauthorizedException("Refresh token expiration mismatch detected");}
         return user;
     }
     public AuthDto.AuthResponse refresh(String refreshToken,HttpServletResponse response){
@@ -98,7 +90,11 @@ public class AuthService {
         UserEntity user = findUserByEmail(request.getEmail());
         String accessToken = jwtUtil.generateAccessToken(user);
         String url = "http://localhost:5173/reset-password?token=" + accessToken;
-        EmailPayload payload = new EmailPayload(user.getEmail(),"Forgot Password",url);
+        Map<String,Object> variables = new HashMap<>();
+        variables.put("username",user.getUsername());
+        variables.put("url",url);
+        String htmlContent = emailTemplateService.processTemplate("forgot-password",variables);
+        EmailPayload payload = new EmailPayload(user.getEmail(),"Forgot Password",htmlContent);
         mailService.sendMail(payload);
     }
     public void resetPassword(AuthDto.ResetPasswordRequest request){

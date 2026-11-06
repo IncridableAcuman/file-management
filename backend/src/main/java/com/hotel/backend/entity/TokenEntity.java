@@ -23,7 +23,7 @@ public class TokenEntity {
     @JoinColumn(name = "user_id")
     private UserEntity user;
 
-    @Column(name = "refresh_token",nullable = false)
+    @Column(name = "refresh_token",nullable = false,length = 1000)
     private String refreshToken;
 
     @Column(name = "expiration",nullable = false)
