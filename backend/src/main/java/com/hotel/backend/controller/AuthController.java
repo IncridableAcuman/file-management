@@ -22,7 +22,7 @@ public class AuthController {
     @PostMapping("/resend-otp")
     public ResponseEntity<String> resendOtp(@Valid @RequestBody AuthDto.ResendOtpRequest request){
         authService.resendOtpCode(request);
-        return ResponseEntity.ok("")
+        return ResponseEntity.ok("");
     }
     @PostMapping("/verify-email")
     public ResponseEntity<AuthDto.AuthResponse> verifyEmail(@Valid @RequestBody AuthDto.VerifyEmailRequest request,HttpServletResponse response){

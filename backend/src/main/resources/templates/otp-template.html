@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emailni tasdiqlash — FileVault</title>
+</head>
+<body style="margin: 0; padding: 20px 0; background-color: #0f172a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+<table border="0" cellpadding="0" cellspacing="0" width="100%">
+    <tr>
+        <td align="center">
+            <table border="0" cellpadding="0" cellspacing="0" width="580" style="background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);">
+                <tr>
+                    <td align="center" style="background: linear-gradient(135deg, #1e40af, #3b82f6); padding: 35px 20px;">
+                        <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 800;">☁️ FileVault Cloud</h1>
+                        <p style="color: #e0e7ff; margin: 6px 0 0; font-size: 13px;">Fayllaringiz xavfsiz boshqaruvi</p>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 36px 32px;">
+                        <p style="color: #1e293b; font-size: 16px; margin: 0 0 12px 0;">
+                            Hurmatli <strong th:text="${username}">Foydalanuvchi</strong>,
+                        </p>
+                        <p style="color: #475569; font-size: 14px; line-height: 22px; margin: 0 0 24px 0;">
+                            FileVault bulutli xotira tizimida profilingizni tasdiqlash uchun quyidagi 6-xonali tasdiqlash kodini (OTP) kiriting:
+                        </p>
+
+                        <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                            <tr>
+                                <td align="center" style="padding: 10px 0 20px 0;">
+                                    <div style="background-color: #f1f5f9; border: 2px dashed #93c5fd; border-radius: 12px; padding: 18px 28px; display: inline-block; letter-spacing: 8px; font-size: 34px; font-family: monospace; font-weight: 800; color: #1e3a8a;" th:text="${otp}">
+                                        123456
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <p style="color: #64748b; font-size: 12px; line-height: 18px; margin: 0; text-align: center;">
+                            Ushbu kod faqat <strong>10 daqiqa</strong> davomida amal qiladi. Hech kimga oshkor qilmang!
+                        </p>
+
+                        <p style="color: #475569; font-size: 13px; margin: 25px 0 0 0;">
+                            Hurmat bilan,<br><strong>FileVault Cloud Jamoasi</strong>
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <td align="center" style="background-color: #f8fafc; padding: 18px; border-top: 1px solid #e2e8f0;">
+                        <p style="color: #94a3b8; font-size: 11px; margin: 0;">
+                            &copy; 2026 FileVault Cloud Storage System. Barcha huquqlar himoyalangan.
+                        </p>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+</body>
+</html>

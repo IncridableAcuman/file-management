@@ -129,6 +129,7 @@ public class AuthService {
         Map<String,Object> variables = new HashMap<>();
         variables.put("username",user.getUsername());
         variables.put("url",url);
+        variables.put("resetUrl",url);
         String htmlContent = emailTemplateService.processTemplate("forgot-password",variables);
         EmailPayload payload = new EmailPayload(user.getEmail(),"Forgot Password",htmlContent);
         mailService.sendMail(payload);

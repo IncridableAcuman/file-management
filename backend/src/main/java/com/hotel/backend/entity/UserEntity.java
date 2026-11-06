@@ -39,7 +39,12 @@ public class UserEntity implements UserDetails {
 
     @Column(name = "enabled")
     @Builder.Default
-    private boolean enabled=false;
+    private Boolean enabled = false;
+
+    @Override
+    public boolean isEnabled() {
+        return Boolean.TRUE.equals(this.enabled);
+    }
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

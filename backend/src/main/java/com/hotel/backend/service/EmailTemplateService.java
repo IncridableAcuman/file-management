@@ -16,6 +16,7 @@ public class EmailTemplateService {
         Context context = new Context();
         context.setVariables(variables);
 
-        return templateEngine.process("/" + templateName,context);
+        String cleanName = templateName.startsWith("/") ? templateName.substring(1) : templateName;
+        return templateEngine.process(cleanName, context);
     }
 }
