@@ -15,8 +15,18 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/register")
-    public ResponseEntity<AuthDto.AuthResponse> register(@Valid @RequestBody AuthDto.RegisterRequest request, HttpServletResponse response){
-        return ResponseEntity.ok(authService.register(request, response));
+    public ResponseEntity<String> register(@Valid @RequestBody AuthDto.RegisterRequest request){
+        authService.register(request);
+        return ResponseEntity.ok("Check your email");
+    }
+    @PostMapping("/resend-otp")
+    public ResponseEntity<String> resendOtp(@Valid @RequestBody AuthDto.ResendOtpRequest request){
+        authService.resendOtpCode(request);
+        return ResponseEntity.ok("")
+    }
+    @PostMapping("/verify-email")
+    public ResponseEntity<AuthDto.AuthResponse> verifyEmail(@Valid @RequestBody AuthDto.VerifyEmailRequest request,HttpServletResponse response){
+        return ResponseEntity.ok(authService.verifyEmail(request,response));
     }
     @PostMapping("/login")
     public ResponseEntity<AuthDto.AuthResponse> login(@Valid @RequestBody AuthDto.LoginRequest request,HttpServletResponse response){

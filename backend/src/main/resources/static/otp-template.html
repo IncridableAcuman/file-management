@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emailni tasdiqlash</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f4f4f7; font-family: Arial, sans-serif;">
+<table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f4f4f7; padding: 20px 0;">
+    <tr>
+        <td align="center">
+            <!-- Asosiy konteyner -->
+            <table border="0" cellpadding="0" cellspacing="0" width="600" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
+
+                <!-- Header qismi -->
+                <tr>
+                    <td align="center" style="background-color: #4f46e5; padding: 30px 0;">
+                        <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: bold;">Xavfsizlik tekshiruvi</h1>
+                    </td>
+                </tr>
+
+                <!-- Asosiy matn qismi -->
+                <tr>
+                    <td style="padding: 40px 30px 20px 30px;">
+                        <p style="color: #374151; font-size: 16px; line-height: 24px; margin: 0 0 15px 0;">
+                            Hurmatli <strong th:text="${username}">Foydalanuvchi</strong>,
+                        </p>
+                        <p style="color: #374151; font-size: 16px; line-height: 24px; margin: 0 0 25px 0;">
+                            Hisobingizni tasdiqlash yoki amalni bajarish uchun quyidagi bir martalik koddan (OTP) foydalaning:
+                        </p>
+
+                        <!-- OTP Kod bloki -->
+                        <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                            <tr>
+                                <td align="center" style="padding: 10px 0;">
+                                    <div style="background-color: #f3f4f6; border-radius: 6px; padding: 15px; display: inline-block; letter-spacing: 6px; font-size: 32px; font-weight: bold; color: #1f2937;" th:text="${otp}">
+                                        123456
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <p style="color: #6b7280; font-size: 14px; line-height: 20px; margin: 25px 0 0 0; text-align: center;">
+                            Ushbu kod faqat <strong>10 daqiqa</strong> davomida amal qiladi. Uni hech kimga bermang!
+                        </p>
+                    </td>
+                </tr>
+
+                <!-- Footer qismi -->
+                <tr>
+                    <td align="center" style="background-color: #f9fafb; padding: 20px; border-top: 1px solid #e5e7eb;">
+                        <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+                            Agar bu soʻrovni siz amalga oshirmagan boʻlsangiz, xabarga eʼtibor bermang.
+                        </p>
+                        <p style="color: #9ca3af; font-size: 12px; margin: 5px 0 0 0;">
+                            &copy; 2026 Sizning Kompaniyangiz. Barcha huquqlar himoyalangan.
+                        </p>
+                    </td>
+                </tr>
+
+            </table>
+        </td>
+    </tr>
+</table>
+</body>
+</html>

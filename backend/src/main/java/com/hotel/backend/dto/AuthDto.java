@@ -51,6 +51,22 @@ public class AuthDto {
         private String confirmPassword;
 
     }
+    @Data
+    public static class VerifyEmailRequest{
+        @NotBlank(message = "Email is required")
+        @Email(message = "Invalid email format")
+        private String email;
+
+        @NotBlank(message = "The OTP code must be entered")
+        private String otp;
+    }
+    @Data
+    public static class ResendOtpRequest{
+        @NotBlank(message = "Email is required")
+        @Email(message = "Invalid email format")
+        private String email;
+    }
+
     public record AuthResponse(
             String accessToken
     ){

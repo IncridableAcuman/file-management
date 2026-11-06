@@ -37,6 +37,10 @@ public class UserEntity implements UserDetails {
     @OneToOne(mappedBy = "user",cascade = CascadeType.ALL)
     private RoleEntity role;
 
+    @Column(name = "enabled")
+    @Builder.Default
+    private boolean enabled=false;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
