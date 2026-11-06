@@ -156,6 +156,36 @@ npm run dev
 | `GET` | `/users/{id}` | Foydalanuvchi profil ma'lumotlari |
 | `POST` | `/users/{id}` | Foydalanuvchi parolini yangilash |
 
+### Fayllar (`/api/v1/files`):
+| Metod | Endpoint | Tavsif |
+| :--- | :--- | :--- |
+| `GET` | `/files` | Fayllar ro'yxati (filtrlar: `category`, `folderId`, `trashed`, `favorite`, `search`) |
+| `GET` | `/files/shared` | Foydalanuvchi bilan ulashilgan fayllar |
+| `GET` | `/files/storage-stats` | Umumiy va toifalar bo'yicha xotira sarfi tahlili |
+| `GET` | `/files/{id}` | Fayl metadatasini olish |
+| `POST` | `/files/upload` | Multipart fayl yuklash (`files` / `file`, ixtiyoriy `folderId`) |
+| `GET` | `/files/{id}/download` | Faylni to'g'ridan-to'g'ri yuklab olish (streaming) |
+| `GET` | `/files/{id}/preview` | Faylni brauzerda ko'rish (inline streaming) |
+| `PATCH` | `/files/{id}/rename` | Fayl nomini o'zgartirish |
+| `PATCH` | `/files/{id}/favorite` | Yulduzcha qo'yish / olib tashlash |
+| `PATCH` | `/files/{id}/trash` | Chiqindilar qutisiga tashlash |
+| `PATCH` | `/files/{id}/restore` | Savatdan qayta tiklash |
+| `DELETE` | `/files/{id}` | Faylni butunlay o'chirish (diskdan ham) |
+| `DELETE` | `/files/trash/empty` | Savatni butunlay tozalash |
+| `POST` | `/files/{id}/share` | Faylni boshqa foydalanuvchiga ulashish (`email`, `role`) |
+
+### Kataloglar (`/api/v1/folders`):
+| Metod | Endpoint | Tavsif |
+| :--- | :--- | :--- |
+| `GET` | `/folders` | Kataloglar ro'yxati (filtrlar: `trashed`, `favorite`) |
+| `GET` | `/folders/{id}` | Katalog ma'lumotlari (fayllar soni va umumiy hajmi bilan) |
+| `POST` | `/folders` | Yangi katalog yaratish (`name`, `parentId`, `color`) |
+| `PATCH` | `/folders/{id}/rename` | Katalog nomini o'zgartirish |
+| `PATCH` | `/folders/{id}/favorite` | Katalogga yulduzcha qo'yish / olib tashlash |
+| `PATCH` | `/folders/{id}/trash` | Katalogni savatga tashlash (ichidagi fayllari bilan) |
+| `PATCH` | `/folders/{id}/restore` | Katalogni savatdan tiklash |
+| `DELETE` | `/folders/{id}` | Katalogni butunlay o'chirish |
+
 ---
 
 ## 📄 Litsenziya

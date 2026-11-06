@@ -153,18 +153,33 @@ export function getFileMeta(fileName: string, mimeType?: string): FileTypeMeta {
   };
 }
 
+import { API_BASE_URL, apiClient } from '@/services/api';
+
 export function detectCategory(fileName: string): FileCategory {
   return getFileMeta(fileName).category;
 }
 
-export function downloadMockFile(file: FileItem) {
-  const blob = new Blob([`Content of ${file.name}\n\nSize: ${formatBytes(file.size)}\nOwner: ${file.owner.name}`], { type: file.mimeType || 'text/plain' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = file.name;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+export async function downloadMockFile(file: FileItem) {
+  try {
+    const res = await apiClient.get(`/files/${file.id}/download`, { responseType: 'blob' });
+    const blob = new Blob([res.data], { type: file.mimeType || 'application/octet-stream' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = file.name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error('Download failed via apiClient, trying direct url:', err);
+    const token = localStorage.getItem('fms_access_token');
+    const url = `${API_BASE_URL}/files/${file.id}/download${token ? `?token=${token}` : ''}`;
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = file.name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
 }

@@ -80,8 +80,11 @@ services:
       COOKIE_SECURE: "false"
       MAIL_USER: abdusharipovizzat03@gmail.com
       MAIL_PASS: vrykfwgjneczwqij
+      FILE_UPLOAD_DIR: /app/uploads
     ports:
       - "8080:8080"
+    volumes:
+      - uploads_data:/app/uploads
     depends_on:
       postgres:
         condition: service_healthy
@@ -115,3 +118,4 @@ volumes:
   postgres_data:
   redis_data:
   rabbitmq_data:
+  uploads_data:

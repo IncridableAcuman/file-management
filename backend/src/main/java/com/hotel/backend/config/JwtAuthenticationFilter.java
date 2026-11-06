@@ -30,12 +30,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
 
+        String token = null;
         String header = request.getHeader("Authorization");
-        if (header == null || !header.startsWith("Bearer ")){
+        if (header != null && header.startsWith("Bearer ")){
+            token = header.substring(7);
+        } else {
+            String paramToken = request.getParameter("token");
+            if (paramToken != null && !paramToken.isBlank()) {
+                token = paramToken;
+            }
+        }
+
+        if (token == null){
             filterChain.doFilter(request,response);
             return;
         }
-        String token = header.substring(7);
         try {
             String type = jwtUtil.getTokenType(token);
             if (!JwtUtil.ACCESS.equals(type)){

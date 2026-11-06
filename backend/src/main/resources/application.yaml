@@ -2,6 +2,12 @@ server:
   port: ${PORT}
   servlet:
     context-path: /api/v1
+    multipart:
+      max-file-size: 500MB
+      max-request-size: 500MB
+
+file:
+  upload-dir: ${FILE_UPLOAD_DIR:./uploads}
 
 spring:
   application:

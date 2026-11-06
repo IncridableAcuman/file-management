@@ -24,7 +24,7 @@ interface FileUploadModalProps {
   folders: FolderItem[];
   currentFolderId: string | null;
   onUpload: (
-    files: Array<{ name: string; size: number; mimeType: string; previewUrl?: string }>,
+    files: Array<{ file?: File; name: string; size: number; mimeType: string; previewUrl?: string }>,
     folderId: string | null
   ) => void;
 }
@@ -69,6 +69,8 @@ export const FileUploadModal: React.FC<FileUploadModalProps> = ({
       const selected = Array.from(e.target.files);
       setFilesToUpload((prev) => [...prev, ...selected]);
     }
+    // Reset input value so re-selecting the same file works correctly
+    e.target.value = '';
   };
 
   const handleRemoveFile = (index: number) => {
@@ -76,32 +78,35 @@ export const FileUploadModal: React.FC<FileUploadModalProps> = ({
   };
 
   const handleStartUpload = () => {
-    if (filesToUpload.length === 0) return;
+    if (filesToUpload.length === 0 || isUploading) return;
 
     setIsUploading(true);
     setUploadProgress(10);
 
+    const filesCopy = [...filesToUpload];
+    let current = 10;
     const interval = setInterval(() => {
-      setUploadProgress((prev) => {
-        if (prev >= 95) {
-          clearInterval(interval);
-          setTimeout(() => {
-            const prepared = filesToUpload.map((f) => ({
-              name: f.name,
-              size: f.size,
-              mimeType: f.type || 'application/octet-stream',
-              previewUrl: f.type.startsWith('image/') ? URL.createObjectURL(f) : undefined,
-            }));
-            onUpload(prepared, selectedFolderId);
-            setIsUploading(false);
-            setUploadProgress(0);
-            setFilesToUpload([]);
-            onOpenChange(false);
-          }, 400);
-          return 100;
-        }
-        return prev + 25;
-      });
+      current += 25;
+      if (current >= 100) {
+        clearInterval(interval);
+        setUploadProgress(100);
+        setTimeout(() => {
+          const prepared = filesCopy.map((f) => ({
+            file: f,
+            name: f.name,
+            size: f.size,
+            mimeType: f.type || 'application/octet-stream',
+            previewUrl: f.type.startsWith('image/') ? URL.createObjectURL(f) : undefined,
+          }));
+          onUpload(prepared, selectedFolderId);
+          setIsUploading(false);
+          setUploadProgress(0);
+          setFilesToUpload([]);
+          onOpenChange(false);
+        }, 300);
+      } else {
+        setUploadProgress(current);
+      }
     }, 200);
   };
 

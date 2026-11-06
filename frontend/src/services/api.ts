@@ -15,6 +15,10 @@ apiClient.interceptors.request.use((config) => {
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  // If sending FormData, delete Content-Type so browser sets boundary automatically
+  if (config.data instanceof FormData && config.headers) {
+    delete config.headers['Content-Type'];
+  }
   return config;
 });
 
@@ -22,13 +26,16 @@ apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    const status = error.response?.status;
+    if ((status === 401 || status === 403) && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
         const res = await axios.post(`${API_BASE_URL}/auth/refresh`, {}, { withCredentials: true });
         if (res.data?.accessToken) {
           localStorage.setItem('fms_access_token', res.data.accessToken);
-          originalRequest.headers.Authorization = `Bearer ${res.data.accessToken}`;
+          if (originalRequest.headers) {
+            originalRequest.headers.Authorization = `Bearer ${res.data.accessToken}`;
+          }
           return apiClient(originalRequest);
         }
       } catch {

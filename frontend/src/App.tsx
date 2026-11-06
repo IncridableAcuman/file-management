@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { Navbar } from '@/components/layout/Navbar';
@@ -28,6 +28,7 @@ import type {
   FolderItem, 
   SortField, 
   SortOrder, 
+  StorageStats,
   ViewMode 
 } from '@/types/file';
 
@@ -45,9 +46,15 @@ const MainAppContent: React.FC = () => {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
 
   // State: Data Store
-  const [files, setFiles] = useState<FileItem[]>(() => fileService.getFiles());
-  const [folders, setFolders] = useState<FolderItem[]>(() => fileService.getFolders());
+  const [files, setFiles] = useState<FileItem[]>([]);
+  const [folders, setFolders] = useState<FolderItem[]>([]);
+  const [storageStats, setStorageStats] = useState<StorageStats>({
+    total: 100 * 1024 * 1024 * 1024,
+    used: 0,
+    categories: [],
+  });
   const [selectedFileIds, setSelectedFileIds] = useState<string[]>([]);
+  const [isDataLoading, setIsDataLoading] = useState<boolean>(false);
 
   // State: Modals
   const [isUploadOpen, setIsUploadOpen] = useState(false);
@@ -59,13 +66,41 @@ const MainAppContent: React.FC = () => {
   const [detailsFile, setDetailsFile] = useState<FileItem | null>(null);
   const [renameItem, setRenameItem] = useState<{ item: FileItem | FolderItem; isFolder: boolean } | null>(null);
 
-  // Refresh data from fileService
-  const refreshData = () => {
-    setFiles([...fileService.getFiles()]);
-    setFolders([...fileService.getFolders()]);
-  };
+  // Refresh data from real backend fileService
+  const refreshData = useCallback(async () => {
+    try {
+      setIsDataLoading(true);
+      const [activeFiles, trashedFiles, activeFolders, trashedFolders, stats] = await Promise.all([
+        fileService.getFiles({ trashed: false }),
+        fileService.getFiles({ trashed: true }),
+        fileService.getFolders({ trashed: false }),
+        fileService.getFolders({ trashed: true }),
+        fileService.getStorageStats(),
+      ]);
 
-  const storageStats = useMemo(() => fileService.getStorageStats(), [files]);
+      const fileMap = new Map<string, FileItem>();
+      [...activeFiles, ...trashedFiles].forEach((f) => fileMap.set(f.id, f));
+      setFiles(Array.from(fileMap.values()));
+
+      const folderMap = new Map<string, FolderItem>();
+      [...activeFolders, ...trashedFolders].forEach((f) => folderMap.set(f.id, f));
+      setFolders(Array.from(folderMap.values()));
+
+      if (stats) {
+        setStorageStats(stats);
+      }
+    } catch (err) {
+      console.error('Failed to load data from backend:', err);
+    } finally {
+      setIsDataLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      refreshData();
+    }
+  }, [isAuthenticated, refreshData]);
 
   // Filter & Sort files
   const filteredFiles = useMemo(() => {
@@ -111,95 +146,147 @@ const MainAppContent: React.FC = () => {
     setSelectedFileIds([]);
   };
 
-  const handleBulkDelete = () => {
-    selectedFileIds.forEach((id) => fileService.moveToTrash(id, false));
+  const handleBulkDelete = async () => {
+    for (const id of selectedFileIds) {
+      await fileService.moveToTrash(id, false);
+    }
     setSelectedFileIds([]);
-    refreshData();
+    await refreshData();
   };
 
-  const handleBulkDownload = () => {
+  const handleBulkDownload = async () => {
     const toDownload = files.filter((f) => selectedFileIds.includes(f.id));
-    toDownload.forEach((f) => {
-      const blob = new Blob([`Content of ${f.name}`], { type: f.mimeType });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = f.name;
-      a.click();
-      URL.revokeObjectURL(url);
-    });
+    for (const f of toDownload) {
+      await fileService.downloadFile(f.id, f.name);
+    }
   };
 
   // Handlers: File operations
-  const handleUploadFiles = (
-    uploaded: Array<{ name: string; size: number; mimeType: string; previewUrl?: string }>,
+  const handleUploadFiles = async (
+    uploaded: Array<{ file?: File; name: string; size: number; mimeType: string; previewUrl?: string }>,
     folderId: string | null
   ) => {
-    uploaded.forEach((f) => {
-      fileService.uploadFile(f, folderId, f.previewUrl);
-    });
-    refreshData();
+    try {
+      const realFiles = uploaded.map((u) => u.file).filter((f): f is File => Boolean(f));
+      if (realFiles.length > 0) {
+        await fileService.uploadFiles(realFiles, folderId);
+      }
+      await refreshData();
+    } catch (err: any) {
+      console.error('Upload failed:', err);
+      alert('Upload failed: ' + (err?.response?.data?.message || err.message));
+    }
   };
 
-  const handleCreateFolder = (name: string, color: string) => {
-    fileService.createFolder(name, currentFolderId, color);
-    refreshData();
+  const handleCreateFolder = async (name: string, color: string) => {
+    try {
+      await fileService.createFolder(name, currentFolderId, color);
+      await refreshData();
+    } catch (err: any) {
+      console.error('Create folder failed:', err);
+      alert('Create folder failed: ' + (err?.response?.data?.message || err.message));
+    }
   };
 
-  const handleRename = (id: string, newName: string, isFolder: boolean) => {
-    fileService.renameItem(id, newName, isFolder);
-    refreshData();
+  const handleRename = async (id: string, newName: string, isFolder: boolean) => {
+    try {
+      await fileService.renameItem(id, newName, isFolder);
+      await refreshData();
+    } catch (err) {
+      console.error('Rename failed:', err);
+    }
   };
 
-  const handleDeleteFile = (fileId: string) => {
-    fileService.moveToTrash(fileId, false);
-    refreshData();
+  const handleDeleteFile = async (fileId: string) => {
+    try {
+      await fileService.moveToTrash(fileId, false);
+      await refreshData();
+    } catch (err) {
+      console.error('Move file to trash failed:', err);
+    }
   };
 
-  const handleDeleteFolder = (folderId: string) => {
-    fileService.moveToTrash(folderId, true);
-    refreshData();
+  const handleDeleteFolder = async (folderId: string) => {
+    try {
+      await fileService.moveToTrash(folderId, true);
+      await refreshData();
+    } catch (err) {
+      console.error('Move folder to trash failed:', err);
+    }
   };
 
-  const handleToggleFavoriteFile = (fileId: string) => {
-    fileService.toggleFavorite(fileId, false);
-    refreshData();
+  const handleToggleFavoriteFile = async (fileId: string) => {
+    try {
+      await fileService.toggleFavorite(fileId, false);
+      await refreshData();
+    } catch (err) {
+      console.error('Toggle favorite file failed:', err);
+    }
   };
 
-  const handleToggleFavoriteFolder = (folderId: string) => {
-    fileService.toggleFavorite(folderId, true);
-    refreshData();
+  const handleToggleFavoriteFolder = async (folderId: string) => {
+    try {
+      await fileService.toggleFavorite(folderId, true);
+      await refreshData();
+    } catch (err) {
+      console.error('Toggle favorite folder failed:', err);
+    }
   };
 
-  const handleShareFile = (fileId: string, email: string, role: 'viewer' | 'editor') => {
-    fileService.shareFile(fileId, email, role);
-    refreshData();
+  const handleShareFile = async (fileId: string, email: string, role: 'viewer' | 'editor') => {
+    try {
+      await fileService.shareFile(fileId, email, role);
+      await refreshData();
+    } catch (err: any) {
+      console.error('Share file failed:', err);
+      alert('Share failed: ' + (err?.response?.data?.message || err.message));
+    }
   };
 
   // Trash operations
-  const handleRestoreFile = (fileId: string) => {
-    fileService.restoreFromTrash(fileId, false);
-    refreshData();
+  const handleRestoreFile = async (fileId: string) => {
+    try {
+      await fileService.restoreFromTrash(fileId, false);
+      await refreshData();
+    } catch (err) {
+      console.error('Restore file failed:', err);
+    }
   };
 
-  const handleRestoreFolder = (folderId: string) => {
-    fileService.restoreFromTrash(folderId, true);
-    refreshData();
+  const handleRestoreFolder = async (folderId: string) => {
+    try {
+      await fileService.restoreFromTrash(folderId, true);
+      await refreshData();
+    } catch (err) {
+      console.error('Restore folder failed:', err);
+    }
   };
 
-  const handleDeleteFilePermanently = (fileId: string) => {
-    fileService.deletePermanently(fileId, false);
-    refreshData();
+  const handleDeleteFilePermanently = async (fileId: string) => {
+    try {
+      await fileService.deletePermanently(fileId, false);
+      await refreshData();
+    } catch (err) {
+      console.error('Delete file permanently failed:', err);
+    }
   };
 
-  const handleDeleteFolderPermanently = (folderId: string) => {
-    fileService.deletePermanently(folderId, true);
-    refreshData();
+  const handleDeleteFolderPermanently = async (folderId: string) => {
+    try {
+      await fileService.deletePermanently(folderId, true);
+      await refreshData();
+    } catch (err) {
+      console.error('Delete folder permanently failed:', err);
+    }
   };
 
-  const handleEmptyTrash = () => {
-    fileService.emptyTrash();
-    refreshData();
+  const handleEmptyTrash = async () => {
+    try {
+      await fileService.emptyTrash();
+      await refreshData();
+    } catch (err) {
+      console.error('Empty trash failed:', err);
+    }
   };
 
   const hasResetToken = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('token');

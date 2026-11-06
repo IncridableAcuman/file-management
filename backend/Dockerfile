@@ -31,8 +31,8 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 # Copy compiled jar from build stage
 COPY --from=build /app/build/libs/*.jar app.jar
 
-# Set permissions
-RUN chown -R appuser:appgroup /app
+# Create uploads directory and set permissions
+RUN mkdir -p /app/uploads && chown -R appuser:appgroup /app
 
 USER appuser
 
