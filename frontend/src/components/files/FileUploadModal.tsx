@@ -1,9 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   UploadCloud, 
   X, 
-  CheckCircle2, 
-  AlertCircle,
   FileText
 } from 'lucide-react';
 import {
@@ -23,10 +21,11 @@ interface FileUploadModalProps {
   onOpenChange: (open: boolean) => void;
   folders: FolderItem[];
   currentFolderId: string | null;
+  initialFiles?: File[];
   onUpload: (
     files: Array<{ file?: File; name: string; size: number; mimeType: string; previewUrl?: string }>,
     folderId: string | null
-  ) => void;
+  ) => Promise<void> | void;
 }
 
 export const FileUploadModal: React.FC<FileUploadModalProps> = ({
@@ -34,6 +33,7 @@ export const FileUploadModal: React.FC<FileUploadModalProps> = ({
   onOpenChange,
   folders,
   currentFolderId,
+  initialFiles,
   onUpload,
 }) => {
   const [dragActive, setDragActive] = useState<boolean>(false);
@@ -42,6 +42,21 @@ export const FileUploadModal: React.FC<FileUploadModalProps> = ({
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync selected destination and files whenever modal opens or folder changes
+  useEffect(() => {
+    if (open) {
+      setSelectedFolderId(currentFolderId);
+      if (initialFiles && initialFiles.length > 0) {
+        setFilesToUpload(initialFiles);
+      } else {
+        setFilesToUpload([]);
+      }
+      setUploadProgress(0);
+      setIsUploading(false);
+      setDragActive(false);
+    }
+  }, [open, currentFolderId, initialFiles]);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -77,41 +92,40 @@ export const FileUploadModal: React.FC<FileUploadModalProps> = ({
     setFilesToUpload((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleStartUpload = () => {
+  const handleStartUpload = async () => {
     if (filesToUpload.length === 0 || isUploading) return;
 
     setIsUploading(true);
-    setUploadProgress(10);
+    setUploadProgress(20);
 
     const filesCopy = [...filesToUpload];
-    let current = 10;
-    const interval = setInterval(() => {
-      current += 25;
-      if (current >= 100) {
-        clearInterval(interval);
-        setUploadProgress(100);
-        setTimeout(() => {
-          const prepared = filesCopy.map((f) => ({
-            file: f,
-            name: f.name,
-            size: f.size,
-            mimeType: f.type || 'application/octet-stream',
-            previewUrl: f.type.startsWith('image/') ? URL.createObjectURL(f) : undefined,
-          }));
-          onUpload(prepared, selectedFolderId);
-          setIsUploading(false);
-          setUploadProgress(0);
-          setFilesToUpload([]);
-          onOpenChange(false);
-        }, 300);
-      } else {
-        setUploadProgress(current);
-      }
-    }, 200);
+    const prepared = filesCopy.map((f) => ({
+      file: f,
+      name: f.name,
+      size: f.size,
+      mimeType: f.type || 'application/octet-stream',
+      previewUrl: f.type.startsWith('image/') ? URL.createObjectURL(f) : undefined,
+    }));
+
+    try {
+      setUploadProgress(60);
+      await onUpload(prepared, selectedFolderId);
+      setUploadProgress(100);
+      setTimeout(() => {
+        setIsUploading(false);
+        setUploadProgress(0);
+        setFilesToUpload([]);
+        onOpenChange(false);
+      }, 300);
+    } catch (err) {
+      console.error('Upload error:', err);
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(v) => !isUploading && onOpenChange(v)}>
       <DialogContent className="sm:max-w-md p-6 rounded-3xl">
         <DialogHeader className="mb-2">
           <DialogTitle className="text-lg font-bold text-foreground">
@@ -128,7 +142,7 @@ export const FileUploadModal: React.FC<FileUploadModalProps> = ({
           onDragLeave={handleDrag}
           onDragOver={handleDrag}
           onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
+          onClick={() => !isUploading && fileInputRef.current?.click()}
           className={`relative flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-2xl cursor-pointer transition-all ${
             dragActive
               ? 'border-blue-500 bg-blue-500/10 scale-[1.01]'
@@ -139,6 +153,7 @@ export const FileUploadModal: React.FC<FileUploadModalProps> = ({
             ref={fileInputRef}
             type="file"
             multiple
+            disabled={isUploading}
             onChange={handleFileChange}
             className="hidden"
           />
@@ -149,7 +164,7 @@ export const FileUploadModal: React.FC<FileUploadModalProps> = ({
             Click to upload or drag & drop files here
           </p>
           <p className="text-[11px] text-muted-foreground text-center mt-1">
-            Support for PDF, Images, Video, Zip, Code up to 2GB per file
+            Support for PDF, Images, Video, Zip, Code up to 500MB per file
           </p>
         </div>
 
@@ -160,17 +175,22 @@ export const FileUploadModal: React.FC<FileUploadModalProps> = ({
           </label>
           <select
             value={selectedFolderId || ''}
+            disabled={isUploading}
             onChange={(e) => setSelectedFolderId(e.target.value || null)}
             className="w-full h-9 rounded-xl border border-border bg-background px-3 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
             <option value="">Root (My Files)</option>
             {folders
               .filter((f) => !f.isTrashed)
-              .map((folder) => (
-                <option key={folder.id} value={folder.id}>
-                  📁 {folder.name}
-                </option>
-              ))}
+              .map((folder) => {
+                const parent = folder.parentId ? folders.find((p) => String(p.id) === String(folder.parentId)) : null;
+                const label = parent ? `${parent.name} / ${folder.name}` : folder.name;
+                return (
+                  <option key={folder.id} value={folder.id}>
+                    📁 {label}
+                  </option>
+                );
+              })}
           </select>
         </div>
 
@@ -197,6 +217,7 @@ export const FileUploadModal: React.FC<FileUploadModalProps> = ({
                 </div>
                 {!isUploading && (
                   <button
+                    type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleRemoveFile(idx);

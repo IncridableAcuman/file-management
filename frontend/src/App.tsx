@@ -59,6 +59,7 @@ const MainAppContent: React.FC = () => {
 
   // State: Modals
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [uploadInitialFiles, setUploadInitialFiles] = useState<File[]>([]);
   const [isNewFolderOpen, setIsNewFolderOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
@@ -177,6 +178,11 @@ const MainAppContent: React.FC = () => {
       console.error('Upload failed:', err);
       alert('Upload failed: ' + (err?.response?.data?.message || err.message));
     }
+  };
+
+  const handleOpenUpload = (files?: File[]) => {
+    setUploadInitialFiles(files && files.length > 0 ? files : []);
+    setIsUploadOpen(true);
   };
 
   const handleCreateFolder = async (name: string, color: string) => {
@@ -307,7 +313,7 @@ const MainAppContent: React.FC = () => {
           setCurrentCategory('all');
         }}
         storageStats={storageStats}
-        onOpenUpload={() => setIsUploadOpen(true)}
+        onOpenUpload={() => handleOpenUpload()}
         onOpenSettings={() => setIsSettingsOpen(true)}
         isMobileOpen={isMobileSidebarOpen}
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
@@ -318,7 +324,7 @@ const MainAppContent: React.FC = () => {
         <Navbar
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
-          onOpenUpload={() => setIsUploadOpen(true)}
+          onOpenUpload={() => handleOpenUpload()}
           onOpenNewFolder={() => setIsNewFolderOpen(true)}
           onOpenSettings={() => setIsSettingsOpen(true)}
           onToggleMobileSidebar={() => setIsMobileSidebarOpen((prev) => !prev)}
@@ -361,7 +367,7 @@ const MainAppContent: React.FC = () => {
               onShareFile={(file) => setShareFile(file)}
               onDeleteFile={handleDeleteFile}
               onToggleFavoriteFile={handleToggleFavoriteFile}
-              onOpenUpload={() => setIsUploadOpen(true)}
+              onOpenUpload={() => handleOpenUpload()}
               onOpenNewFolder={() => setIsNewFolderOpen(true)}
             />
           )}
@@ -396,7 +402,7 @@ const MainAppContent: React.FC = () => {
               onShareFile={(file) => setShareFile(file)}
               onDeleteFile={handleDeleteFile}
               onToggleFavoriteFile={handleToggleFavoriteFile}
-              onOpenUpload={() => setIsUploadOpen(true)}
+              onOpenUpload={handleOpenUpload}
               onOpenNewFolder={() => setIsNewFolderOpen(true)}
             />
           )}
@@ -514,9 +520,13 @@ const MainAppContent: React.FC = () => {
       {/* Global Modals */}
       <FileUploadModal
         open={isUploadOpen}
-        onOpenChange={setIsUploadOpen}
+        onOpenChange={(open) => {
+          setIsUploadOpen(open);
+          if (!open) setUploadInitialFiles([]);
+        }}
         folders={folders}
         currentFolderId={currentFolderId}
+        initialFiles={uploadInitialFiles}
         onUpload={handleUploadFiles}
       />
 

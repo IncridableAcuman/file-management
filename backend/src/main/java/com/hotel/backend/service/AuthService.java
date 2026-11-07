@@ -72,6 +72,7 @@ public class AuthService {
     @Transactional
     public void register(AuthDto.RegisterRequest request){
         if (userRepository.existsByEmail(request.getEmail())){throw new CustomBadRequestException("User already exists");}
+        if (userRepository.existsByUsername(request.getUsername())){throw new CustomBadRequestException("Username already taken");}
         UserEntity user = UserEntity
                 .builder()
                 .username(request.getUsername())

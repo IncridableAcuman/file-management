@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   FolderPlus, 
   UploadCloud, 
@@ -47,7 +47,7 @@ interface MyFilesPageProps {
   onShareFile: (file: FileItem) => void;
   onDeleteFile: (fileId: string) => void;
   onToggleFavoriteFile: (fileId: string) => void;
-  onOpenUpload: () => void;
+  onOpenUpload: (initialFiles?: File[]) => void;
   onOpenNewFolder: () => void;
 }
 
@@ -80,20 +80,66 @@ export const MyFilesPage: React.FC<MyFilesPageProps> = ({
   onOpenUpload,
   onOpenNewFolder,
 }) => {
-  const currentFolder = folders.find((f) => f.id === currentFolderId);
+  const [pageDragActive, setPageDragActive] = useState(false);
+
+  const currentFolder = folders.find((f) => String(f.id) === (currentFolderId ? String(currentFolderId) : null));
 
   // Subfolders for this level
   const subFolders = folders.filter(
-    (f) => f.parentId === currentFolderId && !f.isTrashed
+    (f) => (f.parentId ? String(f.parentId) : null) === (currentFolderId ? String(currentFolderId) : null) && !f.isTrashed
   );
 
   // Files in this level
   const currentFiles = files.filter(
-    (f) => f.folderId === currentFolderId && !f.isTrashed
+    (f) => (f.folderId ? String(f.folderId) : null) === (currentFolderId ? String(currentFolderId) : null) && !f.isTrashed
   );
 
+  const handlePageDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === 'dragenter' || e.type === 'dragover') {
+      setPageDragActive(true);
+    } else if (e.type === 'dragleave') {
+      setPageDragActive(false);
+    }
+  };
+
+  const handlePageDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setPageDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const droppedFiles = Array.from(e.dataTransfer.files);
+      onOpenUpload(droppedFiles);
+    }
+  };
+
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
+    <div 
+      onDragEnter={handlePageDrag}
+      onDragOver={handlePageDrag}
+      onDragLeave={handlePageDrag}
+      onDrop={handlePageDrop}
+      className="relative space-y-6 animate-in fade-in duration-300"
+    >
+      {pageDragActive && (
+        <div 
+          onDragLeave={handlePageDrag}
+          onDragOver={handlePageDrag}
+          onDrop={handlePageDrop}
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-blue-600/15 backdrop-blur-xs border-4 border-dashed border-blue-500 rounded-3xl m-4 pointer-events-auto"
+        >
+          <div className="flex size-20 items-center justify-center rounded-3xl bg-blue-600 text-white shadow-xl animate-bounce mb-4">
+            <UploadCloud className="size-10" />
+          </div>
+          <h3 className="text-xl font-bold text-foreground">
+            Drop files here to upload
+          </h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            Uploading to: <span className="font-semibold text-blue-600 dark:text-blue-400">{currentFolder ? currentFolder.name : 'Root (My Files)'}</span>
+          </p>
+        </div>
+      )}
       {/* Breadcrumb Navigation & Action Buttons */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-border/60">
         <div className="flex items-center gap-1.5 flex-wrap text-sm font-semibold">
@@ -143,7 +189,7 @@ export const MyFilesPage: React.FC<MyFilesPageProps> = ({
           </Button>
           <Button
             size="sm"
-            onClick={onOpenUpload}
+            onClick={() => onOpenUpload()}
             className="h-8 text-xs gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium"
           >
             <UploadCloud className="size-3.5" />
@@ -201,7 +247,7 @@ export const MyFilesPage: React.FC<MyFilesPageProps> = ({
             </p>
             <Button
               size="sm"
-              onClick={onOpenUpload}
+              onClick={() => onOpenUpload()}
               className="mt-4 rounded-xl text-xs bg-blue-600 hover:bg-blue-700 text-white font-medium"
             >
               Upload Here

@@ -85,13 +85,13 @@ class FileService {
     return res.data;
   }
 
-  public async uploadFiles(files: File[], folderId: string | null = null): Promise<FileItem[]> {
+  public async uploadFiles(files: File[], folderId: string | number | null = null): Promise<FileItem[]> {
     const formData = new FormData();
     files.forEach((file) => {
       formData.append('files', file);
     });
-    if (folderId && folderId !== 'null' && folderId.trim() !== '') {
-      formData.append('folderId', folderId);
+    if (folderId !== null && folderId !== undefined && String(folderId) !== 'null' && String(folderId).trim() !== '') {
+      formData.append('folderId', String(folderId));
     }
 
     const res = await apiClient.post<FileItem[]>('/files/upload', formData);
