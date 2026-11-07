@@ -24,6 +24,18 @@ public interface FileRepository extends JpaRepository<FileEntity, Long> {
 
     long countByFolderIdAndIsTrashedFalse(Long folderId);
 
+    long countByIsTrashedFalse();
+
+    long countByIsTrashedTrue();
+
+    long countByOwnerAndIsTrashedFalse(UserEntity owner);
+
+    @Query("SELECT COALESCE(SUM(f.size), 0) FROM FileEntity f WHERE f.isTrashed = false")
+    Long sumTotalSize();
+
+    @Query("SELECT f.category, COUNT(f), COALESCE(SUM(f.size), 0) FROM FileEntity f WHERE f.isTrashed = false GROUP BY f.category")
+    List<Object[]> getStatsByCategory();
+
     @Query("SELECT COALESCE(SUM(f.size), 0) FROM FileEntity f WHERE f.folderId = :folderId AND f.isTrashed = false")
     Long sumSizeByFolderIdAndIsTrashedFalse(@Param("folderId") Long folderId);
 
@@ -34,4 +46,6 @@ public interface FileRepository extends JpaRepository<FileEntity, Long> {
     List<FileEntity> findAllSharedWithEmail(@Param("email") String email);
 
     void deleteAllByOwnerAndIsTrashedTrue(UserEntity owner);
+
+    void deleteAllByOwner(UserEntity owner);
 }

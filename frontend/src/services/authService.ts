@@ -56,6 +56,11 @@ export const authService = {
     return res.data;
   },
 
+  async getMyProfile(): Promise<User> {
+    const res = await apiClient.get<User>('/users/me');
+    return res.data;
+  },
+
   async getCurrentUser(id: number): Promise<User> {
     const res = await apiClient.get<User>(`/users/${id}`);
     return res.data;

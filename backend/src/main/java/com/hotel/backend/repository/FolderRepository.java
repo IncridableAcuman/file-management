@@ -18,5 +18,11 @@ public interface FolderRepository extends JpaRepository<FolderEntity, Long> {
 
     Optional<FolderEntity> findByIdAndOwner(Long id, UserEntity owner);
 
+    long countByIsTrashedFalse();
+
+    long countByOwnerAndIsTrashedFalse(UserEntity owner);
+
     void deleteAllByOwnerAndIsTrashedTrue(UserEntity owner);
+
+    void deleteAllByOwner(UserEntity owner);
 }

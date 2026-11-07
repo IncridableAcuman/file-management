@@ -3,9 +3,11 @@ export interface User {
   username: string;
   email: string;
   role?: {
-    id: number;
-    name: string;
+    id?: number;
+    name?: string;
+    type?: string;
   };
+  enabled?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }

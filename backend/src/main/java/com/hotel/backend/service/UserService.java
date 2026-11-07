@@ -20,6 +20,10 @@ public class UserService {
         UserEntity user = userRepository.findById(id).orElseThrow();
         return UserDto.UserResponse.from(user);
     }
+    public UserDto.UserResponse getCurrentUser(UserEntity user){
+        UserEntity freshUser = userRepository.findById(user.getId()).orElse(user);
+        return UserDto.UserResponse.from(freshUser);
+    }
     public List<UserDto.UserResponse> getUsers(){
         List<UserEntity> users = userRepository.findAll();
         return users

@@ -15,6 +15,11 @@ import java.util.List;
 public class UserController {
     private final UserService userService;
 
+    @GetMapping("/me")
+    public ResponseEntity<UserDto.UserResponse> getCurrentUser(@org.springframework.security.core.annotation.AuthenticationPrincipal com.hotel.backend.entity.UserEntity user){
+        return ResponseEntity.ok(userService.getCurrentUser(user));
+    }
+
     @GetMapping
     public ResponseEntity<List<UserDto.UserResponse>> getUsers(){
         return ResponseEntity.ok(userService.getUsers());

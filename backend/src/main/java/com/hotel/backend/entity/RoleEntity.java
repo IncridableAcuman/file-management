@@ -20,6 +20,7 @@ public class RoleEntity {
 
     @OneToOne
     @JoinColumn(name = "user_id")
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private UserEntity user;
 
     @Enumerated(EnumType.STRING)

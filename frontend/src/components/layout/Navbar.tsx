@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Search, 
   Sun, 
@@ -11,7 +11,11 @@ import {
   Settings, 
   User as UserIcon, 
   ShieldCheck, 
-  HardDrive
+  HardDrive,
+  CheckCircle2,
+  AlertTriangle,
+  Info,
+  CheckCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +31,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
+import { notificationService } from '@/services/notificationService';
+import type { NotificationItem } from '@/types/admin';
 
 interface NavbarProps {
   searchQuery: string;
@@ -36,6 +42,7 @@ interface NavbarProps {
   onOpenSettings: () => void;
   onToggleMobileSidebar: () => void;
   onRequestLogout: () => void;
+  onNavigateToAdmin?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -46,9 +53,48 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenSettings,
   onToggleMobileSidebar,
   onRequestLogout,
+  onNavigateToAdmin,
 }) => {
   const { setTheme, isDark } = useTheme();
   const { user } = useAuth();
+
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const [list, count] = await Promise.all([
+        notificationService.getNotifications(),
+        notificationService.getUnreadCount(),
+      ]);
+      setNotifications(list);
+      setUnreadCount(count);
+    } catch {
+      // fallback
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 15000);
+    return () => clearInterval(interval);
+  }, [fetchNotifications]);
+
+  const handleMarkAsRead = async (id: number) => {
+    await notificationService.markAsRead(id);
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
+    );
+    setUnreadCount((prev) => Math.max(0, prev - 1));
+  };
+
+  const handleMarkAllAsRead = async () => {
+    await notificationService.markAllAsRead();
+    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    setUnreadCount(0);
+  };
+
+  const isAdmin = (user?.role?.name || user?.role?.type || '').toUpperCase() === 'ADMIN';
 
   const toggleTheme = () => {
     setTheme(isDark ? 'light' : 'dark');
@@ -174,26 +220,85 @@ export const Navbar: React.FC<NavbarProps> = ({
               className="relative rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/60"
             >
               <Bell className="size-4" />
-              <span className="absolute top-1.5 right-1.5 size-2 bg-blue-600 rounded-full ring-2 ring-background animate-pulse" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-blue-600 text-[10px] font-bold text-white shadow ring-2 ring-background animate-pulse">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80 p-2 rounded-xl">
-            <div className="flex items-center justify-between px-3 py-2">
-              <span className="text-sm font-semibold">Notifications</span>
-              <Badge variant="secondary" className="text-xs">2 New</Badge>
+          <DropdownMenuContent align="end" className="w-80 md:w-96 p-2 rounded-xl shadow-xl">
+            <div className="flex items-center justify-between px-3 py-2 border-b border-border/50">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold">Notifications</span>
+                {unreadCount > 0 ? (
+                  <Badge variant="default" className="text-xs bg-blue-600 text-white hover:bg-blue-600">
+                    {unreadCount} New
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary" className="text-xs">0 New</Badge>
+                )}
+              </div>
+              {notifications.length > 0 && unreadCount > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleMarkAllAsRead}
+                  className="h-7 px-2 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/40 gap-1"
+                >
+                  <CheckCheck className="size-3.5" />
+                  Mark all read
+                </Button>
+              )}
             </div>
-            <DropdownMenuSeparator />
-            <div className="space-y-1 py-1">
-              <div className="p-2.5 hover:bg-muted/50 rounded-lg text-xs space-y-1 cursor-pointer transition-colors">
-                <p className="font-medium text-foreground">File uploaded successfully</p>
-                <p className="text-muted-foreground">Product_Architecture_v2.pdf has been stored securely.</p>
-                <span className="text-[10px] text-muted-foreground/80">10 mins ago</span>
-              </div>
-              <div className="p-2.5 hover:bg-muted/50 rounded-lg text-xs space-y-1 cursor-pointer transition-colors">
-                <p className="font-medium text-foreground">Storage limit at 45%</p>
-                <p className="text-muted-foreground">You have 54.2 GB of free space available.</p>
-                <span className="text-[10px] text-muted-foreground/80">2 hours ago</span>
-              </div>
+            <div className="max-h-80 overflow-y-auto space-y-1 py-1.5">
+              {notifications.length === 0 ? (
+                <div className="py-8 text-center text-xs text-muted-foreground">
+                  <Bell className="size-6 mx-auto mb-2 opacity-30" />
+                  <p>No notifications yet</p>
+                </div>
+              ) : (
+                notifications.slice(0, 10).map((n) => {
+                  let IconComp = Info;
+                  let colorClass = "text-blue-500 bg-blue-500/10";
+                  if (n.type === 'SUCCESS') {
+                    IconComp = CheckCircle2;
+                    colorClass = "text-emerald-500 bg-emerald-500/10";
+                  } else if (n.type === 'WARNING') {
+                    IconComp = AlertTriangle;
+                    colorClass = "text-amber-500 bg-amber-500/10";
+                  } else if (n.type === 'ALERT') {
+                    IconComp = AlertTriangle;
+                    colorClass = "text-rose-500 bg-rose-500/10";
+                  }
+
+                  return (
+                    <div
+                      key={n.id}
+                      onClick={() => !n.isRead && handleMarkAsRead(n.id)}
+                      className={`p-2.5 rounded-lg text-xs space-y-1 cursor-pointer transition-colors flex gap-3 ${
+                        n.isRead ? 'opacity-70 hover:bg-muted/40' : 'bg-muted/50 hover:bg-muted/80 font-medium'
+                      }`}
+                    >
+                      <div className={`size-7 rounded-lg flex items-center justify-center shrink-0 ${colorClass}`}>
+                        <IconComp className="size-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-1">
+                          <p className="font-semibold text-foreground truncate">{n.title}</p>
+                          {!n.isRead && (
+                            <span className="size-2 rounded-full bg-blue-600 shrink-0" />
+                          )}
+                        </div>
+                        <p className="text-muted-foreground text-xs line-clamp-2 mt-0.5">{n.message}</p>
+                        <span className="text-[10px] text-muted-foreground/80 mt-1 block">
+                          {n.createdAt ? new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' }) : ''}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -219,9 +324,15 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <p className="text-sm font-semibold text-foreground leading-none">
                     {user?.username || 'User'}
                   </p>
-                  <Badge variant="outline" className="text-[10px] py-0 px-1 border-blue-500/40 text-blue-600 dark:text-blue-400">
-                    Pro
-                  </Badge>
+                  {isAdmin ? (
+                    <Badge className="text-[10px] py-0 px-1.5 bg-gradient-to-r from-violet-600 to-purple-600 text-white font-semibold">
+                      ADMIN
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-[10px] py-0 px-1 border-blue-500/40 text-blue-600 dark:text-blue-400">
+                      Pro
+                    </Badge>
+                  )}
                 </div>
                 <p className="text-xs text-muted-foreground truncate leading-none">
                   {user?.email || 'user@example.com'}
@@ -229,6 +340,15 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            {isAdmin && onNavigateToAdmin && (
+              <DropdownMenuItem
+                onClick={onNavigateToAdmin}
+                className="flex items-center gap-2.5 px-3 py-2 cursor-pointer rounded-lg text-sm font-medium text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/30 mb-1"
+              >
+                <ShieldCheck className="size-4" />
+                <span>Admin Dashboard</span>
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem
               onClick={onOpenSettings}
               className="flex items-center gap-2.5 px-3 py-2 cursor-pointer rounded-lg text-sm"

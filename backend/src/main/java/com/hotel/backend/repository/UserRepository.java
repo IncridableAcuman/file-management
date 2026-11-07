@@ -11,4 +11,6 @@ public interface UserRepository extends JpaRepository<UserEntity,Long> {
     Optional<UserEntity> findByUsername(String username);
     Optional<UserEntity> findByEmail(String email);
     boolean existsByEmail(String email);
+    long countByEnabled(Boolean enabled);
+    long countByRole_Type(com.hotel.backend.entity.enums.RoleType type);
 }

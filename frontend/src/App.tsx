@@ -10,6 +10,7 @@ import { StarredPage } from '@/pages/StarredPage';
 import { RecentPage } from '@/pages/RecentPage';
 import { TrashPage } from '@/pages/TrashPage';
 import { AuthPage } from '@/pages/AuthPage';
+import { AdminPage } from '@/pages/AdminPage';
 
 // Modals
 import { FileUploadModal } from '@/components/files/FileUploadModal';
@@ -322,6 +323,7 @@ const MainAppContent: React.FC = () => {
           onOpenSettings={() => setIsSettingsOpen(true)}
           onToggleMobileSidebar={() => setIsMobileSidebarOpen((prev) => !prev)}
           onRequestLogout={() => setIsLogoutConfirmOpen(true)}
+          onNavigateToAdmin={() => setCurrentTab('admin')}
         />
 
         {/* Dynamic Page Views */}
@@ -501,6 +503,10 @@ const MainAppContent: React.FC = () => {
               onPreviewFile={(file) => setPreviewFile(file)}
               onDetailsFile={(file) => setDetailsFile(file)}
             />
+          )}
+
+          {currentTab === 'admin' && (
+            <AdminPage />
           )}
         </main>
       </div>

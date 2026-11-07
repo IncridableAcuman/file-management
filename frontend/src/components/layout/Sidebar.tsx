@@ -11,14 +11,16 @@ import {
   Cloud, 
   Settings, 
   Sparkles,
-  ChevronRight
+  ChevronRight,
+  ShieldCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { formatBytes } from '@/lib/fileUtils';
 import type { StorageStats } from '@/types/file';
+import { useAuth } from '@/context/AuthContext';
 
-export type NavTab = 'dashboard' | 'my-files' | 'shared' | 'starred' | 'recent' | 'trash';
+export type NavTab = 'dashboard' | 'my-files' | 'shared' | 'starred' | 'recent' | 'trash' | 'admin';
 
 interface SidebarProps {
   currentTab: NavTab;
@@ -39,6 +41,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isMobileOpen,
   onCloseMobile,
 }) => {
+  const { user } = useAuth();
+  const isAdmin = (user?.role?.name || user?.role?.type || '').toUpperCase() === 'ADMIN';
+
   const percentUsed = Math.min(
     100,
     Math.round((storageStats.used / (storageStats.total || 1)) * 100)
@@ -81,6 +86,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: Trash2,
       badge: null,
     },
+    ...(isAdmin
+      ? [
+          {
+            id: 'admin' as NavTab,
+            label: 'Admin Panel',
+            icon: ShieldCheck,
+            badge: 'Admin',
+          },
+        ]
+      : []),
   ];
 
   const handleNavClick = (tab: NavTab) => {

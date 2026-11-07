@@ -37,6 +37,29 @@
 - **Formatga mos ranglar**: PDF qizil, Word/Docs ko'k, Excel yashil, Video binafsha, Rasm sariq, Kod neon-cyan, ZIP to'q sariq.
 - **To'liq responsiv**: Mobil qurilmalar, planshetlar va keng ekranli monitorlar uchun moslashgan.
 
+### 👑 4. Admin Boshqaruvi & Tizim Statistikasi
+- **Admin Dashboard**: Faqat `ROLE_ADMIN` huquqiga ega bo'lgan foydalanuvchilar uchun maxsus boshqaruv paneli.
+- **To'liq Tahlil & Metrikalar**:
+  - Jami foydalanuvchilar (faol, bloklangan, adminlar va oddiy foydalanuvchilar soni).
+  - Jami fayllar, savatdagi fayllar, papkalar soni va xotira sarfi.
+  - Toifalar bo'yicha sarflangan xotira va fayllar miqdori tahlili (Documents, Images, Videos, Audio, Archives, Code).
+  - **Top Storage Users**: Xotiradan eng ko'p foydalanayotgan yetakchi foydalanuvchilar reytingi.
+- **Foydalanuvchilarni boshqarish**:
+  - Jonli qidiruv va filtrlash (rol va holat bo'yicha).
+  - Foydalanuvchini bloklash / qayta faollashtirish (`Block / Unblock`).
+  - Rolni o'zgartirish (`Admin / User`).
+  - Foydalanuvchini tizimdan barcha ma'lumotlari bilan to'liq o'chirish.
+
+### 🔔 5. Bildirishnomalar Tizimi (Notification System)
+- **Admin tomondan yuborish**:
+  - **Broadcast**: Barcha tizim foydalanuvchilariga umumiy e'lon jo'natish.
+  - **Direct**: Ma'lum bir foydalanuvchini tanlab individual xabar jo'natish.
+  - Xabar turlari: `INFO` (ma'lumot), `SUCCESS` (muvaffaqiyat), `WARNING` (ogohlantirish), `ALERT` (shoshilinch).
+- **Foydalanuvchi qismi**:
+  - Navbar da jonli bildirishnomalar qo'ng'irog'i (Bell) va o'qilmaganlar soni nishoni (Badge).
+  - O'qilgan deb belgilash (`Mark as read`) va barchasini o'qilgan qilish (`Mark all as read`).
+  - Har bir xabar turiga mos vizual ikonkalar va ranglar.
+
 ---
 
 ## 🛠 Texnologiyalar Steki
@@ -185,6 +208,26 @@ npm run dev
 | `PATCH` | `/folders/{id}/trash` | Katalogni savatga tashlash (ichidagi fayllari bilan) |
 | `PATCH` | `/folders/{id}/restore` | Katalogni savatdan tiklash |
 | `DELETE` | `/folders/{id}` | Katalogni butunlay o'chirish |
+
+### 👑 Admin Boshqaruvi (`/api/v1/admin`):
+| Metod | Endpoint | Tavsif |
+| :--- | :--- | :--- |
+| `GET` | `/admin/stats` | Tizim statistikasi (Users, Files, Folders, Categories tahlili, Top storage consumers) |
+| `GET` | `/admin/users` | Barcha foydalanuvchilar batafsil ma'lumotlari va statistikasi bilan |
+| `PATCH` | `/admin/users/{id}/status` | Foydalanuvchini bloklash yoki faollashtirish (`enabled=true/false`) |
+| `PATCH` | `/admin/users/{id}/role` | Foydalanuvchi rolini o'zgartirish (`role=ADMIN/USER`) |
+| `DELETE` | `/admin/users/{id}` | Foydalanuvchini barcha fayllari va ma'lumotlari bilan o'chirish |
+| `POST` | `/admin/notifications` | Foydalanuvchilarga bildirishnoma yuborish (Broadcast yoki Direct) |
+| `GET` | `/admin/notifications` | Yuborilgan bildirishnomalar tarixi |
+
+### 🔔 Bildirishnomalar (`/api/v1/notifications`):
+| Metod | Endpoint | Tavsif |
+| :--- | :--- | :--- |
+| `GET` | `/notifications` | Foydalanuvchiga kelgan bildirishnomalar |
+| `GET` | `/notifications/unread-count` | O'qilmagan bildirishnomalar soni |
+| `PATCH` | `/notifications/{id}/read` | Bildirishnomani o'qildi deb belgilash |
+| `PATCH` | `/notifications/read-all` | Barcha bildirishnomalarni o'qildi deb belgilash |
+| `DELETE` | `/notifications/{id}` | Bildirishnomani o'chirish |
 
 ---
 

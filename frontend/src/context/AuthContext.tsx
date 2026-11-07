@@ -61,18 +61,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
   }, []);
 
+  useEffect(() => {
+    const token = localStorage.getItem('fms_access_token');
+    if (token) {
+      authService.getMyProfile()
+        .then((profile) => {
+          if (profile) {
+            const roleStr = (profile.role?.name || profile.role?.type || 'USER').toUpperCase();
+            setUser({
+              ...profile,
+              role: { id: profile.role?.id ?? 1, name: roleStr },
+            });
+          }
+        })
+        .catch(() => {});
+    }
+  }, []);
+
   const login = async (data: LoginRequest) => {
     setIsLoading(true);
     try {
       await authService.login(data);
-      const newUser: User = {
-        id: 1,
-        username: data.email.split('@')[0],
-        email: data.email,
-        role: { id: 1, name: 'USER' },
-        updatedAt: new Date().toISOString()
-      };
-      setUser(newUser);
+      try {
+        const profile = await authService.getMyProfile();
+        const roleStr = (profile.role?.name || profile.role?.type || (data.email.toLowerCase().includes('admin') ? 'ADMIN' : 'USER')).toUpperCase();
+        const normalizedUser: User = {
+          ...profile,
+          role: { id: profile.role?.id ?? 1, name: roleStr },
+        };
+        setUser(normalizedUser);
+      } catch {
+        const roleStr = data.email.toLowerCase().includes('admin') ? 'ADMIN' : 'USER';
+        const newUser: User = {
+          id: 1,
+          username: data.email.split('@')[0],
+          email: data.email,
+          role: { id: 1, name: roleStr },
+          updatedAt: new Date().toISOString()
+        };
+        setUser(newUser);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -91,14 +119,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     try {
       await authService.verifyEmail(data);
-      const newUser: User = {
-        id: 1,
-        username: data.email.split('@')[0],
-        email: data.email,
-        role: { id: 1, name: 'USER' },
-        updatedAt: new Date().toISOString()
-      };
-      setUser(newUser);
+      try {
+        const profile = await authService.getMyProfile();
+        const roleStr = (profile.role?.name || profile.role?.type || 'USER').toUpperCase();
+        setUser({
+          ...profile,
+          role: { id: profile.role?.id ?? 1, name: roleStr },
+        });
+      } catch {
+        const newUser: User = {
+          id: 1,
+          username: data.email.split('@')[0],
+          email: data.email,
+          role: { id: 1, name: 'USER' },
+          updatedAt: new Date().toISOString()
+        };
+        setUser(newUser);
+      }
     } finally {
       setIsLoading(false);
     }
